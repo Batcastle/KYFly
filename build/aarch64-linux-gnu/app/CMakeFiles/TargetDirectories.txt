@@ -1,0 +1,12 @@
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/kyfly_core.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/kyfly.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/edit_cache.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/rebuild_cache.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/list_install_components.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/install.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/install/local.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/install/strip.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/kyfly_core_autogen_timestamp_deps.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/kyfly_core_autogen.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/kyfly_autogen_timestamp_deps.dir
+/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/kyfly_autogen.dir

@@ -1,0 +1,15 @@
+{
+    "name": "kyfly.batcastle",
+    "description": "Live FPV camera and flight control for KY UFO family Wi-Fi drones",
+    "architecture": "arm64",
+    "title": "KY Fly",
+    "hooks": {
+        "kyfly": {
+            "apparmor": "kyfly.apparmor",
+            "desktop": "kyfly.desktop"
+        }
+    },
+    "version": "0.1.0",
+    "maintainer": "Thomas Castleman <batcastle@draugeros.org>",
+    "framework": "ubuntu-touch-24.04-1.x"
+}

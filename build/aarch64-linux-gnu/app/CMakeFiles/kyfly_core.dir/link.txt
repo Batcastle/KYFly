@@ -1,0 +1,2 @@
+/usr/bin/aarch64-linux-gnu-ar qc libkyfly_core.a CMakeFiles/kyfly_core.dir/kyfly_core_autogen/mocs_compilation.cpp.o CMakeFiles/kyfly_core.dir/src/rtpjpeg.cpp.o CMakeFiles/kyfly_core.dir/src/framedecoder.cpp.o CMakeFiles/kyfly_core.dir/src/rtspworker.cpp.o CMakeFiles/kyfly_core.dir/src/videoreceiver.cpp.o CMakeFiles/kyfly_core.dir/src/flightinput.cpp.o CMakeFiles/kyfly_core.dir/src/dronelink.cpp.o
+/usr/bin/aarch64-linux-gnu-ranlib libkyfly_core.a

@@ -1,0 +1,5 @@
+clickable_minimum_required: 8.4.0
+builder: cmake
+framework: ubuntu-touch-24.04-1.x
+build_args:
+  - -DCLICK_MODE=ON

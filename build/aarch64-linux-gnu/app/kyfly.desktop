@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=KY Fly
+Comment=FPV camera and flight control for KY UFO Wi-Fi drones
+Exec=kyfly
+Icon=assets/logo.svg
+Terminal=false
+Type=Application
+X-Lomiri-Touch=true
+X-Ubuntu-Touch=true
+X-Lomiri-Supported-Orientations=landscape
+X-Ubuntu-Supported-Orientations=landscape

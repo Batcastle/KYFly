@@ -1,0 +1,27 @@
+{
+	"BUILD_DIR" : "/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/kyfly_autogen",
+	"CMAKE_BINARY_DIR" : "/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app",
+	"CMAKE_CURRENT_BINARY_DIR" : "/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/home/batcastle/GitHub/kyfly",
+	"CMAKE_SOURCE_DIR" : "/home/batcastle/GitHub/kyfly",
+	"GENERATOR" : "Unix Makefiles",
+	"INCLUDE_DIR" : "/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/kyfly_autogen/include",
+	"INPUTS" : 
+	[
+		"/home/batcastle/GitHub/kyfly/qml/SettingsPanel.qml",
+		"/home/batcastle/GitHub/kyfly/qml/KeyboardInput.qml",
+		"/home/batcastle/GitHub/kyfly/qml/Main.qml",
+		"/home/batcastle/GitHub/kyfly/qml/Stick.qml",
+		"/home/batcastle/GitHub/kyfly/qml/HudButton.qml"
+	],
+	"LOCK_FILE" : "/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/kyfly_autogen.dir/AutoRcc_qml_CCBC4FUR7J_Lock.lock",
+	"MULTI_CONFIG" : false,
+	"OPTIONS" : [ "-name", "qml" ],
+	"OUTPUT_CHECKSUM" : "CCBC4FUR7J",
+	"OUTPUT_NAME" : "qrc_qml.cpp",
+	"RCC_EXECUTABLE" : "/usr/lib/qt5/bin/rcc",
+	"RCC_LIST_OPTIONS" : [ "--list" ],
+	"SETTINGS_FILE" : "/home/batcastle/GitHub/kyfly/build/aarch64-linux-gnu/app/CMakeFiles/kyfly_autogen.dir/AutoRcc_qml_CCBC4FUR7J_Used.txt",
+	"SOURCE" : "/home/batcastle/GitHub/kyfly/qml/qml.qrc",
+	"VERBOSITY" : 0
+}

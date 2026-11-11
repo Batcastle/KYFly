@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/qml">
+        <file>Main.qml</file>
+        <file>Stick.qml</file>
+        <file>HudButton.qml</file>
+        <file>KeyboardInput.qml</file>
+        <file>SettingsPanel.qml</file>
+    </qresource>
+</RCC>

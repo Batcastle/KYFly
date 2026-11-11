@@ -1,0 +1,15 @@
+{
+    "name": "@FULL_PROJECT_NAME@",
+    "description": "Live FPV camera and flight control for KY UFO family Wi-Fi drones",
+    "architecture": "@CLICK_ARCH@",
+    "title": "KY Fly",
+    "hooks": {
+        "kyfly": {
+            "apparmor": "kyfly.apparmor",
+            "desktop": "@DESKTOP_FILE_NAME@"
+        }
+    },
+    "version": "@PROJECT_VERSION@",
+    "maintainer": "Thomas Castleman <batcastle@draugeros.org>",
+    "framework": "@CLICK_FRAMEWORK@"
+}
