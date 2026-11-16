@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import QtQuick 2.15
 import QtQuick.Window 2.15
+import QtQuick.Controls 2.15
 import Qt.labs.settings 1.0
 import KyFly 1.0
 
@@ -279,8 +280,14 @@ Window {
         property string text: ""
         property bool isError: false
         property bool shown: false
-        z: 30
-        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: unit * 2.5 }
+        // In the overlay layer, so results (e.g. "Sent to Gallery") are visible
+        // even while the media panel is open.
+        parent: Overlay.overlay
+        z: 1000
+        // Near the top normally; at the bottom while the media panel is open,
+        // so it never covers the file list's buttons.
+        x: (root.width - width) / 2
+        y: mediaPanel.opened ? root.height - height - unit * 0.9 : unit * 2.5
         width: Math.min(toastText.implicitWidth + unit * 0.6, parent.width * 0.6)
         height: toastText.implicitHeight + unit * 0.3
         radius: height / 2
@@ -299,6 +306,7 @@ Window {
         }
         MouseArea { // tap to see the files
             anchors.fill: parent
+            enabled: !mediaPanel.opened && !exportPopup.opened
             onClicked: { toast.shown = false; mediaPanel.open() }
         }
         Timer { id: toastTimer; interval: 3500; onTriggered: toast.shown = false }
@@ -365,13 +373,22 @@ Window {
             accent: "#66bb6a"
             onClicked: controls.trigger(FlightInput.ToggleArmed)
         }
-        HudButton { anchors.right: parent.right; unit: root.unit * 0.8; text: "CAMERA"
-                    onClicked: controls.trigger(FlightInput.SwitchCamera) }
-        HudButton { anchors.right: parent.right; unit: root.unit * 0.8; text: "ROTATE"
-                    sub: root.videoRotation + "°"
-                    onClicked: root.rotateVideo() }
+        // Side by side, so the column stays clear of the right stick on short
+        // (phone landscape) screens.
+        Row {
+            anchors.right: parent.right
+            spacing: unit * 0.15
+            HudButton { unit: root.unit * 0.8; text: "CAMERA"
+                        onClicked: controls.trigger(FlightInput.SwitchCamera) }
+            HudButton { unit: root.unit * 0.8; text: "ROTATE"
+                        sub: root.videoRotation + "°"
+                        onClicked: root.rotateVideo() }
+        }
         HudButton { anchors.right: parent.right; unit: root.unit * 0.8; text: "SETTINGS"
                     onClicked: settingsPanel.open() }
+        HudButton { anchors.right: parent.right; unit: root.unit * 0.8; text: "MEDIA"
+                    sub: capture.recording ? "● rec" : "photos & videos"
+                    onClicked: mediaPanel.open() }
     }
 
     // ------------------------------------------------------------------ emergency stop
@@ -479,7 +496,6 @@ Window {
         unit: root.unit
         store: appSettings
         onHostEdited: { appSettings.host = h; root.applyHost(h) }
-        onOpenMedia: { settingsPanel.close(); mediaPanel.open() }
         onClosed: keyboard.forceActiveFocus()
     }
 
@@ -487,6 +503,12 @@ Window {
         id: mediaPanel
         unit: root.unit
         onMessage: root.showToast(text)
+        onExportRequested: exportPopup.exportFile(path, isVideo)
         onClosed: keyboard.forceActiveFocus()
+    }
+
+    ExportPopup {
+        id: exportPopup
+        onMessage: root.showToast(text)
     }
 }

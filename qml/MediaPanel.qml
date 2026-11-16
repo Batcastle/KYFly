@@ -10,18 +10,11 @@ Popup {
     property var files: []
     property string confirmDelete: ""
     signal message(string text)
+    signal exportRequested(string path, bool isVideo)
 
     function reload() { files = capture.mediaFiles(); confirmDelete = "" }
     function sizeText(b) {
         return b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"
-    }
-    function exportFile(path, isVideo) {
-        if (exportLoader.item) {
-            exportLoader.item.exportFile(path, isVideo)
-        } else {
-            panel.message("Exporting needs Ubuntu Touch's Content Hub. Files are in " +
-                          (isVideo ? capture.videoDir : capture.photoDir))
-        }
     }
 
     onOpened: reload()
@@ -33,7 +26,7 @@ Popup {
     width: Math.min(parent ? parent.width * 0.92 : 800, unit * 15)
     height: parent ? parent.height * 0.92 : 600
     padding: unit * 0.3
-    background: Rectangle { color: "#f2202124"; radius: 10; border.color: "#44ffffff" }
+    background: Rectangle { color: "#202124"; radius: 10; border.color: "#44ffffff" }
 
     palette.window: "#202124"
     palette.windowText: "white"
@@ -58,7 +51,7 @@ Popup {
         }
         Label {
             visible: panel.files.length === 0
-            text: "Nothing captured yet. Use the photo and record buttons on the left of the flight screen."
+            text: "Nothing captured yet. Use the photo and record buttons at the top left of the flight screen."
             color: "#ccffffff"; wrapMode: Text.WordWrap
             Layout.fillWidth: true
         }
@@ -120,7 +113,7 @@ Popup {
                     }
                     Button {
                         text: "Export"
-                        onClicked: panel.exportFile(modelData.path, modelData.video)
+                        onClicked: panel.exportRequested(modelData.path, modelData.video)
                     }
                     Button {
                         text: panel.confirmDelete === modelData.path ? "Really delete?" : "Delete"
@@ -141,23 +134,6 @@ Popup {
             color: "#88ffffff"; font.pixelSize: unit * 0.22
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
-        }
-    }
-
-    // Content Hub picker, if this system has it (Lomiri.Content, or the older
-    // Ubuntu.Content name). Covers the whole window while choosing an app.
-    Loader {
-        id: exportLoader
-        parent: Overlay.overlay
-        anchors.fill: parent
-        z: 100
-        source: "ContentExport.qml"
-        onStatusChanged: if (status === Loader.Error && source.toString().indexOf("Ubuntu") < 0)
-                             source = "ContentExportUbuntu.qml"
-        Connections {
-            target: exportLoader.item
-            ignoreUnknownSignals: true
-            function onDone(text) { panel.message(text) }
         }
     }
 }

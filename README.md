@@ -171,7 +171,7 @@ the unmodified frame.
 are saved in `~/.local/share/kyfly.batcastle/kyfly/Pictures` and `…/Videos`.
 Writing straight to `~/Pictures` / `~/Videos` would need the reserved
 `picture_files` / `video_files` AppArmor groups (manual review). Instead,
-**Settings → Photos & videos** lists everything with **Export**, which sends a
+the **MEDIA** button (right side, under Settings) lists everything with **Export**, which sends a
 copy to another app (Gallery, Files…) through Content Hub. That only needs the
 common `content_exchange_source` group.
 
