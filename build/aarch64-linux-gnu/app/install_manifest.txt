@@ -1,5 +1,0 @@
-//manifest.json
-//kyfly.desktop
-//kyfly.apparmor
-//assets/logo.svg
-//kyfly
