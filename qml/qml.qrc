@@ -9,5 +9,6 @@
         <file>MediaPanel.qml</file>
         <file>ContentExport.qml</file>
         <file>ContentExportUbuntu.qml</file>
+        <file>ExportPopup.qml</file>
     </qresource>
 </RCC>

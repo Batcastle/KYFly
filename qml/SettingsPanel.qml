@@ -8,7 +8,6 @@ Popup {
     property real unit: 40
     property var store
     signal hostEdited(string h)
-    signal openMedia()
 
     readonly property var photoLabels: ({ jpeg: "JPEG", png: "PNG", webp: "WEBP", raw: "RAW" })
     readonly property var photoNotes: ({
@@ -54,14 +53,7 @@ Popup {
             width: panel.availableWidth
             spacing: unit * 0.2
 
-            RowLayout {
-                Layout.fillWidth: true
-                Label {
-                    text: "Settings"; color: "white"; font.pixelSize: unit * 0.5; font.bold: true
-                    Layout.fillWidth: true
-                }
-                Button { text: "Photos && videos"; onClicked: panel.openMedia() }
-            }
+            Label { text: "Settings"; color: "white"; font.pixelSize: unit * 0.5; font.bold: true }
 
             Label { text: "Photos"; color: "white"; font.bold: true }
             RowLayout {
