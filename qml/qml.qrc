@@ -5,5 +5,9 @@
         <file>HudButton.qml</file>
         <file>KeyboardInput.qml</file>
         <file>SettingsPanel.qml</file>
+        <file>CaptureButton.qml</file>
+        <file>MediaPanel.qml</file>
+        <file>ContentExport.qml</file>
+        <file>ContentExportUbuntu.qml</file>
     </qresource>
 </RCC>

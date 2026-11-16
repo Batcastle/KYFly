@@ -7,6 +7,7 @@
 #include <QObject>
 #include <QThread>
 
+class JpegSink;
 class RtspWorker;
 class QTimer;
 
@@ -39,6 +40,8 @@ public:
     Q_INVOKABLE void stop();
     // Stop now and start again after delayMs (used after camera switches).
     Q_INVOKABLE void restart(int delayMs = 0);
+    // Frames for photo/video capture; call before start().
+    void setSink(JpegSink *sink);
 
     QString url() const { return m_url; }
     void setUrl(const QString &u);

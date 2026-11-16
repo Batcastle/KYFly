@@ -391,6 +391,8 @@ void DroneLink::onAction(int action)
     case FlightInput::TrimPitchForward: setTrimPitch(m_trimPitch + 1); break;
     case FlightInput::TrimYawLeft: setTrimYaw(m_trimYaw - 1); break;
     case FlightInput::TrimYawRight: setTrimYaw(m_trimYaw + 1); break;
+    case FlightInput::TakePhoto: emit photoRequested(); break;
+    case FlightInput::ToggleRecording: emit recordToggleRequested(); break;
     default: break;
     }
 }
@@ -437,8 +439,9 @@ void DroneLink::onReadyRead()
             emit lastReplyChanged();
         }
         const int b0 = uchar(d.at(0));
+        handleRemoteButtons(d);
         if (b0 == 0x66)
-            continue; // remote-controller button events (photo/record), not status
+            continue; // remote-controller button event, not status
         if (b0 != m_modelId) {
             const int oldFormat = packetFormat();
             const bool oldHold = altitudeHold();
@@ -456,6 +459,61 @@ void DroneLink::onReadyRead()
         }
         if (d.size() >= 2)
             m_cameraResetMode = uchar(d.at(1));
+    }
+}
+
+void DroneLink::handleRemoteButtons(const QByteArray &d)
+{
+    auto at = [&d](int i) { return i < d.size() ? int(uchar(d.at(i))) : -1; };
+    // Edge-triggered: a button counts once, however many replies repeat it.
+    auto edge = [this](bool &latch, bool pressed, void (DroneLink::*sig)()) {
+        if (pressed && !latch)
+            emit (this->*sig)();
+        latch = pressed;
+    };
+
+    if (at(0) == 0x66) {
+        // 20-byte family (DeviceGLFragment, SocketClient listener).
+        bool photo = false, record = false;
+        if (at(1) == 0x00 && d.size() >= 10) {
+            photo = at(2) == 1 && at(9) == 1;
+            record = at(2) == 2 && at(9) == 2;
+        }
+        if (at(1) == 0x2A) {
+            photo = at(2) == 1;
+            record = at(2) == 2;
+        } else if (d.size() == 10 || d.size() == 15) {
+            photo = photo || at(4) == 2;
+            record = record || at(4) == 4;
+        }
+        edge(m_rcPhotoLatch, photo, &DroneLink::photoRequested);
+        edge(m_rcRecordLatch, record, &DroneLink::recordToggleRequested);
+        return;
+    }
+    m_rcPhotoLatch = m_rcRecordLatch = false;
+    if (packetFormat() != 8)
+        return; // byte 2 means image orientation on the other family
+
+    // 8-byte family (DeviceBLFragment): 'M' / 'X' in byte 2 with a press counter.
+    if (d.size() > 4) {
+        auto counterAdvanced = [](int now, int &last) {
+            const bool adv = now > last || (last == 255 && now < last);
+            if (adv)
+                last = now;
+            return adv;
+        };
+        if (at(2) == 77 && counterAdvanced(at(3), m_rcPhotoCount)) {
+            send(QByteArray("\x09\x01", 2)); // acknowledge, as the official app does
+            emit photoRequested();
+        } else if (at(2) == 88 && counterAdvanced(at(4), m_rcVideoCount)) {
+            send(QByteArray("\x09\x02", 2));
+            emit recordToggleRequested();
+        }
+    } else if (d.size() >= 3) {
+        if (at(2) == 77)
+            emit photoRequested();
+        else if (at(2) == 88)
+            emit recordToggleRequested();
     }
 }
 

@@ -13,6 +13,17 @@
 #include <QThread>
 #include <QWaitCondition>
 
+#include <atomic>
+
+// Receives every complete JPEG frame from the network thread. Implementations
+// must be thread-safe and must not block (they run on the network thread).
+class JpegSink
+{
+public:
+    virtual ~JpegSink() = default;
+    virtual void onJpeg(const QByteArray &jpeg) = 0;
+};
+
 class FrameDecoder : public QThread
 {
     Q_OBJECT

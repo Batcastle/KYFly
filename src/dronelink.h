@@ -136,6 +136,10 @@ signals:
     // Camera switch needs the video stream restarted (after delayMs).
     void videoRestartRequested(int delayMs);
     void rotateVideoRequested();
+    // Photo / record buttons on the drone's own remote controller, and the
+    // matching FlightInput actions (on-screen, keyboard, later gamepads).
+    void photoRequested();
+    void recordToggleRequested();
 
 private slots:
     void sendHeartbeat();
@@ -149,6 +153,7 @@ private:
     bool pulseActive(qint64 until) const { return m_clock.elapsed() < until; }
     void setFlying(bool on);
     void ensureSocket();
+    void handleRemoteButtons(const QByteArray &d);
 
     QHostAddress m_host{QStringLiteral("192.168.1.1")};
     QUdpSocket *m_socket = nullptr;
@@ -179,6 +184,12 @@ private:
     qint64 m_flipUntil = 0;
     int m_flipRoll = 128, m_flipPitch = 128;
     FlightInput::Axes m_frozenAxes;
+
+    // remote-controller button state (edge detection)
+    bool m_rcPhotoLatch = false;
+    bool m_rcRecordLatch = false;
+    int m_rcPhotoCount = 0;
+    int m_rcVideoCount = 0;
 
     QString m_lastPacketHex;
     QString m_lastReplyHex;

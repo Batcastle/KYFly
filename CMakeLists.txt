@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(kyfly VERSION 0.1.0 LANGUAGES CXX)
+project(kyfly VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -25,6 +25,11 @@ add_library(kyfly_core STATIC
     src/videoreceiver.cpp src/videoreceiver.h
     src/flightinput.cpp src/flightinput.h
     src/dronelink.cpp src/dronelink.h
+    src/jpegutil.cpp src/jpegutil.h
+    src/mkvwriter.cpp src/mkvwriter.h
+    src/mp4writer.cpp src/mp4writer.h
+    src/recorder.cpp src/recorder.h
+    src/mediacapture.cpp src/mediacapture.h
 )
 target_include_directories(kyfly_core PUBLIC src)
 target_link_libraries(kyfly_core PUBLIC Qt5::Core Qt5::Gui Qt5::Network)
@@ -70,6 +75,33 @@ if(CLICK_MODE)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.apparmor DESTINATION ${DATA_DIR})
     install(DIRECTORY assets DESTINATION ${DATA_DIR})
     install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})
+
+    # WEBP photos need Qt's webp image plugin. Ubuntu Touch may not ship it, so
+    # bundle it (plus libwebp) when it's present in the build environment
+    # (clickable.yaml installs qt5-image-formats-plugins there). Best effort:
+    # without it the app simply hides the WEBP option.
+    option(KYFLY_BUNDLE_WEBP "Bundle Qt's WebP image plugin in the click" ON)
+    if(KYFLY_BUNDLE_WEBP)
+        get_target_property(_qmake Qt5::qmake IMPORTED_LOCATION)
+        execute_process(COMMAND ${_qmake} -query QT_INSTALL_PLUGINS
+                        OUTPUT_VARIABLE _qt_plugins OUTPUT_STRIP_TRAILING_WHITESPACE)
+        set(_qwebp "${_qt_plugins}/imageformats/libqwebp.so")
+        if(EXISTS "${_qwebp}")
+            execute_process(COMMAND ${_qmake} -query QT_INSTALL_LIBS
+                            OUTPUT_VARIABLE _qt_libs OUTPUT_STRIP_TRAILING_WHITESPACE)
+            get_filename_component(_triplet "${_qt_libs}" NAME)
+            install(FILES "${_qwebp}" DESTINATION plugins/imageformats)
+            foreach(_soname libsharpyuv.so.0 libwebp.so.7 libwebpdemux.so.2 libwebpmux.so.3)
+                if(EXISTS "${_qt_libs}/${_soname}")
+                    get_filename_component(_real "${_qt_libs}/${_soname}" REALPATH)
+                    install(FILES "${_real}" DESTINATION lib/${_triplet} RENAME ${_soname})
+                endif()
+            endforeach()
+            message(STATUS "Bundling WebP image plugin from ${_qwebp}")
+        else()
+            message(STATUS "WebP image plugin not found; WEBP photos depend on the system")
+        endif()
+    endif()
 else()
     include(GNUInstallDirs)
     install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -86,7 +118,11 @@ if(KYFLY_BUILD_TOOLS)
     target_link_libraries(depay_test kyfly_core)
     add_executable(packet_test tests/packet_test.cpp)
     target_link_libraries(packet_test kyfly_core)
+    add_executable(capture_test tests/capture_test.cpp)
+    target_link_libraries(capture_test kyfly_core)
     if(Python3_FOUND)
+        add_test(NAME photo_and_video_capture
+                 COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/capture_cases.py $<TARGET_FILE:capture_test>)
         add_test(NAME rtp_jpeg_depayloader
                  COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tests/depay_cases.py $<TARGET_FILE:depay_test>)
         add_test(NAME control_packets_match_java

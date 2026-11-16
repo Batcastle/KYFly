@@ -31,6 +31,9 @@ public:
     explicit RtspWorker(QObject *parent = nullptr);
     ~RtspWorker() override;
 
+    // Set once before streaming; receives every complete frame (for capture).
+    void setSink(JpegSink *sink) { m_sink = sink; }
+
 public slots:
     void start(const QString &url, bool useTcp);
     void stop();
@@ -90,6 +93,8 @@ private:
     quint32 m_ssrc = 0;
     RtpJpegDepayloader m_depay;
     FrameDecoder *m_decoder = nullptr;
+    std::atomic<JpegSink *> m_sink{nullptr};
+    bool m_triedOtherTransport = false;
     QByteArray m_scratch;
     int m_rcvBuf = 0;
 

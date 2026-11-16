@@ -16,7 +16,7 @@ means writing a single new input class. Nothing else needs to change.
   * `setAxes(source, yaw, throttle, roll, pitch)`, all normalized −1..+1
   * `trigger(action)` for buttons, using the `FlightInput::Action` enum
     (TakeOff, Land, TakeOffOrLand, EmergencyStop, ArmFlip, SwitchCamera,
-    SpeedUp/Down, ToggleArmed, trims, …)
+    SpeedUp/Down, ToggleArmed, TakePhoto, ToggleRecording, trims, …)
   * `releaseSource(source)` when a device goes away
 * **`DroneLink`** never looks at devices. It reads `FlightInput::axes()` on its
   own 50 ms timer, so a gamepad reporting at 250 Hz and touch at 60 Hz produce
@@ -47,6 +47,8 @@ class GamepadInput : public QObject {
         case BtnX:     m_input->trigger(FlightInput::ArmFlip); break;
         case BtnY:     m_input->trigger(FlightInput::SwitchCamera); break;
         case BtnStart: m_input->trigger(FlightInput::ToggleArmed); break;
+        case BtnSelect: m_input->trigger(FlightInput::TakePhoto); break;
+        case BtnR3:    m_input->trigger(FlightInput::ToggleRecording); break;
         case BtnL1:    m_input->trigger(FlightInput::SpeedDown); break;
         case BtnR1:    m_input->trigger(FlightInput::SpeedUp); break;
         }

@@ -55,6 +55,7 @@ void RtspWorker::start(const QString &url, bool useTcp)
     teardownSockets(true);
     m_url = url;
     m_useTcp = useTcp;
+    m_triedOtherTransport = false;
     m_running = true;
     if (!m_decoder->isRunning())
         m_decoder->start();
@@ -261,10 +262,22 @@ void RtspWorker::handleResponse(int code, const QHash<QByteArray, QByteArray> &h
     }
 
     case StepSetup: {
-        if (code == 461 && !m_useTcp) { // Unsupported transport -> fall back to TCP
-            m_useTcp = true;
-            sendRequest(QStringLiteral("SETUP"), m_controlUrl,
-                        {{"Transport", "RTP/AVP/TCP;unicast;interleaved=0-1"}});
+        if (code == 461 && !m_triedOtherTransport) { // Unsupported transport: try the other one
+            m_triedOtherTransport = true;
+            m_useTcp = !m_useTcp;
+            if (m_useTcp) {
+                sendRequest(QStringLiteral("SETUP"), m_controlUrl,
+                            {{"Transport", "RTP/AVP/TCP;unicast;interleaved=0-1"}});
+            } else {
+                if (!m_rtp && !bindUdpPair()) {
+                    fail(tr("Could not open local UDP ports"));
+                    return;
+                }
+                const QByteArray t = "RTP/AVP;unicast;client_port=" +
+                                     QByteArray::number(m_rtp->localPort()) + '-' +
+                                     QByteArray::number(m_rtcp->localPort());
+                sendRequest(QStringLiteral("SETUP"), m_controlUrl, {{"Transport", t}});
+            }
             return;
         }
         if (code != 200) {
@@ -413,6 +426,8 @@ void RtspWorker::handleRtp(const uint8_t *data, int len)
     QByteArray jpeg;
     if (m_depay.push(data, len, jpeg)) {
         ++m_rxFrames;
+        if (JpegSink *sink = m_sink.load())
+            sink->onJpeg(jpeg);  // capture (never blocks)
         m_decoder->submit(jpeg); // never blocks; decoder keeps only the newest
     }
 }
