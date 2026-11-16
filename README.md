@@ -51,7 +51,8 @@ Then the full app, windowed:
 
 Keyboard controls: **Enter** controls on/off, **W/S** throttle, **A/D** yaw,
 arrows pitch/roll, **T** takeoff, **L** land, **Space** emergency stop,
-**F** flip, **C** camera, **H** headless, **G** gyro calibrate, **1/2/3** speed.
+**F** flip, **C** camera, **H** headless, **G** gyro calibrate, **1/2/3** speed,
+**P** photo, **R** start/stop recording.
 
 ### Without the drone
 
@@ -65,6 +66,9 @@ sudo apt install python3-gi gir1.2-gst-rtsp-server-1.0 \
 python3 tools/mock_drone.py --model-id 9     # 9 = 8-byte family, 90 = 20-byte
 ./build/kyfly --host 127.0.0.1 --windowed     # in another terminal
 ```
+
+`kill -USR1 <mock pid>` / `kill -USR2 <mock pid>` simulate pressing the photo /
+record button on the drone's remote.
 
 ## Build and install on Ubuntu Touch
 
@@ -103,15 +107,17 @@ framework, change the one line in `clickable.yaml`. Builds for 24.04 won't run o
 
 ## Confinement notes (for OpenStore auto-review)
 
-* AppArmor: `networking` and `keep-display-on`. Both are standard groups; no
-  reserved groups, no `unconfined`.
+* AppArmor: `networking`, `keep-display-on` and `content_exchange_source`. All
+  are common groups; no reserved groups, no `unconfined`.
+* Bundled: only Qt's WebP image plugin and libwebp (from Ubuntu's own
+  packages), loaded from the click by full path.
 * The screen is kept on by calling `keepDisplayOn` on
   `com.canonical.Unity.Screen` (system bus) while the app is in the foreground,
   which is exactly what the `keep-display-on` group permits. The request is
   released when the app is suspended, and dropped automatically if it exits.
 * Settings live in `~/.config/kyfly.batcastle/` because the organization name is
   set to the click name in `main.cpp`. Change both together if you rename the app.
-* No bundled libraries, no plugins scanned at runtime, no helper processes.
+* No helper processes.
 
 ## Things I couldn't verify without a device
 
@@ -122,6 +128,58 @@ framework, change the one line in `clickable.yaml`. Builds for 24.04 won't run o
   `X-Ubuntu-Supported-Orientations` in the desktop file.
 * **Screen keep-on**: the debug overlay's `screen-on` field shows `on` when the
   request succeeded, or the D-Bus error name if it didn't.
+
+## Photos and videos
+
+The **PHOTO** and **record** buttons on the left are always shown, with flight
+controls on or off, so the app also works as a camera monitor while flying with
+the drone's own remote. The remote's own photo/record buttons work too: the
+drone reports them, and the app reacts the same way the official app does.
+
+**Videos** are stored exactly as the drone sends them: its MJPEG frames are
+copied into the file, never re-compressed, so recording adds no CPU load or
+latency and loses no quality.
+
+* **MKV** (default) is written so the file is valid at every moment. If the app,
+  phone or video feed dies mid-recording, everything up to the last frame plays.
+* **MP4** is recorded as that same crash-safe MKV and converted to MP4 when you
+  stop. If anything goes wrong before then, the MKV is kept.
+* Switching cameras mid-recording continues in a new file (`…_2.mkv`), so each
+  file has one resolution and the right rotation.
+* Rotation is stored as metadata (Matroska projection roll / MP4 track matrix),
+  matching what you see on screen.
+* Recording stops by itself if free space drops below 100 MB, and is finalized
+  when the app is suspended or closed.
+
+MJPEG video plays in VLC, mpv, ffmpeg-based players and GStreamer (Ubuntu
+Touch's media stack). Some players without MJPEG support, such as web browsers,
+won't play it.
+
+**Photos** come from the newest frame:
+
+| Format | What you get |
+|---|---|
+| JPEG | The drone's JPEG data, untouched, plus an EXIF orientation tag so viewers show it rotated like the screen |
+| PNG | Lossless image of what's on screen (rotation applied) |
+| WEBP | Like PNG but much smaller (quality 92) |
+| RAW | The frame exactly as the drone sent it: no rotation, no metadata, no changes |
+
+The drone has no sensor-raw output (it only ever sends JPEG), so "RAW" means
+the unmodified frame.
+
+**Where files go.** Confined apps may only write to their own folder, so files
+are saved in `~/.local/share/kyfly.batcastle/kyfly/Pictures` and `…/Videos`.
+Writing straight to `~/Pictures` / `~/Videos` would need the reserved
+`picture_files` / `video_files` AppArmor groups (manual review). Instead,
+**Settings → Photos & videos** lists everything with **Export**, which sends a
+copy to another app (Gallery, Files…) through Content Hub. That only needs the
+common `content_exchange_source` group.
+
+**WEBP support.** Qt needs its WebP image plugin for this. The click bundles it
+(installed into the build container through `dependencies_target` in
+`clickable.yaml`) and the app loads the bundled copy at startup. If it can't be
+loaded, the WEBP option is simply hidden. To check on a device, run
+`kyfly --list-image-formats`.
 
 ## Reading the debug overlay (video)
 
@@ -167,11 +225,16 @@ src/rtspworker.*     RTSP client, RTP receive, decode (worker thread)
 src/videoreceiver.*  GUI-thread facade for the worker
 src/videoitem.*      Scene-graph item showing the newest frame
 src/flightinput.*    Device-agnostic pilot input (touch, keyboard, gamepad later)
-src/dronelink.*      UDP 7099: heartbeat, status, control frames, commands
+src/dronelink.*      UDP 7099: heartbeat, status, control frames, commands, remote buttons
+src/mediacapture.*   Photos (JPEG/PNG/WEBP/RAW), media list, recording control
+src/recorder.*       Recording thread: segments, free-space guard, MP4 finalize
+src/mkvwriter.*      Crash-safe Matroska writer (MJPEG stream copy)
+src/mp4writer.*      MP4 builder from the recorded frames
+src/jpegutil.*       JPEG size parsing, EXIF orientation
 qml/                 UI (Main, Stick, HudButton, SettingsPanel, KeyboardInput)
 tools/probe.cpp      PC diagnostic using the app's code
 tools/mock_drone.py  Fake drone for testing
-tests/               Depayloader and control-packet tests
+tests/               Depayloader, control-packet and capture tests
 ```
 
 Source files carry a `GPL-3.0-or-later` SPDX header as a placeholder; change it

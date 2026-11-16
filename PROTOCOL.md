@@ -157,10 +157,33 @@ deflection normalized to −1..+1 (right/up positive):
 * The 20-byte family's screen has a single take-off/land button, toggling based
   on whether the app thinks it's flying.
 
+### Remote-controller photo / record buttons
+
+The drone reports presses of the transmitter's photo and record buttons in its
+replies; the official app then "presses" its own photo/record button.
+
+**20-byte family**: replies whose byte 0 is `0x66` (`DeviceGLFragment`):
+
+| Layout | Photo | Record |
+|---|---|---|
+| byte 1 = `0x00`, length ≥ 10 | byte 2 = 1 and byte 9 = 1 | byte 2 = 2 and byte 9 = 2 |
+| byte 1 = `0x2A` | byte 2 = 1 | byte 2 = 2 |
+| length 10 or 15 (other byte 1) | byte 4 = 2 | byte 4 = 4 |
+
+Photo is edge-triggered in the app (once per press even if repeated); KY Fly
+treats record the same way.
+
+**8-byte family**: byte 2 of the normal status reply (`DeviceBLFragment`):
+
+* `77` (`'M'`): photo, with a press counter in byte 3; `88` (`'X'`): record,
+  counter in byte 4. A press counts when the counter increases (or wraps from
+  255). The app acknowledges with `09 01` (photo) or `09 02` (record).
+* Replies of only 3–4 bytes: `77` / `88` in byte 2 trigger directly.
+
 ### Other commands
 
 | Bytes | Meaning |
 |---|---|
 | `08 01` | Controls off (sent once when the on-screen sticks are disabled) |
 | `06 01` / `06 02` | Switch to camera 1 / camera 2 (then restart video per status byte 1) |
-| `09 01` / `09 02` | Context dependent: screen flip normal/flipped (`SocketClient.switchScreen`), but on the 8-byte family also the acknowledgement of an RC photo / record button event. This app flips the picture locally instead of sending these. |
+| `09 01` / `09 02` | Context dependent: screen flip normal/flipped (`SocketClient.switchScreen`), but on the 8-byte family also the acknowledgement of an RC photo / record button event (KY Fly sends them only as that acknowledgement; it rotates the picture locally). |

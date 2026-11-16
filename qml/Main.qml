@@ -53,6 +53,41 @@ Window {
         property int trimRoll: 0
         property int trimPitch: 0
         property int trimYaw: 0
+        property string photoFormat: "jpeg"
+        property string videoFormat: "mkv"
+    }
+
+    // Capture follows the same rotation the screen uses, and the saved formats.
+    Binding { target: capture; property: "landscapeRotation"; value: appSettings.landscapeRotation }
+    Binding { target: capture; property: "portraitRotation"; value: appSettings.portraitRotation }
+    Binding { target: capture; property: "photoFormat"; value: appSettings.photoFormat }
+    Binding { target: capture; property: "videoFormat"; value: appSettings.videoFormat }
+
+    function showToast(text, isError) {
+        toast.text = text
+        toast.isError = !!isError
+        toast.shown = true
+        toastTimer.restart()
+    }
+    function fileName(p) { return p.substring(p.lastIndexOf("/") + 1) }
+    function clock(ms) {
+        var s = Math.floor(ms / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60)
+        function two(n) { return (n < 10 ? "0" : "") + n }
+        return (h > 0 ? h + ":" + two(m % 60) : m) + ":" + two(s % 60)
+    }
+
+    Connections {
+        target: capture
+        function onPhotoSaved(path) {
+            flash.opacity = 0.7
+            flashAnim.restart()
+            root.showToast("Photo saved: " + root.fileName(path))
+        }
+        function onVideoSaved(paths) {
+            root.showToast(paths.length > 1 ? paths.length + " videos saved (camera was switched)"
+                                            : "Video saved: " + root.fileName(paths[0]))
+        }
+        function onCaptureError(message) { root.showToast(message, true) }
     }
 
     function applyHost(h) {
@@ -205,6 +240,70 @@ Window {
         onMoved: root.pushTouch()
     }
 
+    // ------------------------------------------------------------------ capture (left side)
+    // Always visible, flight controls on or off, so the app works as a camera
+    // monitor while flying with the drone's own remote.
+    Row {
+        id: captureCol
+        anchors { left: parent.left; leftMargin: unit * 0.3; top: statusCol.bottom; topMargin: unit * 0.3 }
+        spacing: unit * 0.3
+        CaptureButton {
+            size: root.unit * 1.05
+            label: "PHOTO"
+            enabled: capture.hasFrame && root.videoPlaying
+            onClicked: controls.trigger(FlightInput.TakePhoto)
+        }
+        CaptureButton {
+            size: root.unit * 1.05
+            recordStyle: true
+            active: capture.recording
+            enabled: capture.recording || (!capture.finalizing && root.videoPlaying)
+            label: capture.finalizing ? "SAVING…"
+                 : capture.recording ? root.clock(capture.recordingMs)
+                 : appSettings.videoFormat.toUpperCase()
+            onClicked: controls.trigger(FlightInput.ToggleRecording)
+        }
+    }
+
+    Rectangle { // photo flash
+        id: flash
+        anchors.fill: parent
+        color: "white"
+        opacity: 0
+        z: 20
+        NumberAnimation on opacity { id: flashAnim; running: false; to: 0; duration: 220 }
+    }
+
+    Rectangle {
+        id: toast
+        property string text: ""
+        property bool isError: false
+        property bool shown: false
+        z: 30
+        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: unit * 2.5 }
+        width: Math.min(toastText.implicitWidth + unit * 0.6, parent.width * 0.6)
+        height: toastText.implicitHeight + unit * 0.3
+        radius: height / 2
+        color: isError ? "#e6b71c1c" : "#e6202124"
+        border.color: "#66ffffff"
+        opacity: shown ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 180 } }
+        Text {
+            id: toastText
+            anchors.centerIn: parent
+            width: Math.min(implicitWidth, root.width * 0.6 - unit * 0.6)
+            text: toast.text
+            color: "white"; font.pixelSize: unit * 0.3
+            elide: Text.ElideMiddle
+        }
+        MouseArea { // tap to see the files
+            anchors.fill: parent
+            onClicked: { toast.shown = false; mediaPanel.open() }
+        }
+        Timer { id: toastTimer; interval: 3500; onTriggered: toast.shown = false }
+    }
+
     // ------------------------------------------------------------------ status (top left)
     Rectangle {
         anchors { fill: statusCol; margins: -unit * 0.12 }
@@ -235,6 +334,14 @@ Window {
                   ? "Video " + video.fps.toFixed(0) + " fps · " + videoView.sourceWidth + "×" + videoView.sourceHeight
                   : "Video: " + video.status
             color: "white"; font.pixelSize: unit * 0.3
+            style: Text.Outline; styleColor: "black"
+        }
+        Text {
+            visible: capture.recording
+            text: "● REC " + root.clock(capture.recordingMs) + " · " +
+                  (capture.recordingBytes / 1048576).toFixed(1) + " MB" +
+                  (capture.recordingDropped > 0 ? " · " + capture.recordingDropped + " dropped" : "")
+            color: "#ff8a80"; font.pixelSize: unit * 0.3; font.bold: true
             style: Text.Outline; styleColor: "black"
         }
         Text {
@@ -342,7 +449,7 @@ Window {
     // ------------------------------------------------------------------ debug overlay
     Rectangle {
         visible: appSettings.showDebug
-        anchors { left: parent.left; top: statusCol.bottom; topMargin: unit * 0.3; leftMargin: unit * 0.25 }
+        anchors { left: parent.left; top: captureCol.bottom; topMargin: unit * 0.2; leftMargin: unit * 0.25 }
         width: dbg.implicitWidth + unit * 0.3
         height: dbg.implicitHeight + unit * 0.2
         color: "#99000000"
@@ -372,6 +479,14 @@ Window {
         unit: root.unit
         store: appSettings
         onHostEdited: { appSettings.host = h; root.applyHost(h) }
+        onOpenMedia: { settingsPanel.close(); mediaPanel.open() }
+        onClosed: keyboard.forceActiveFocus()
+    }
+
+    MediaPanel {
+        id: mediaPanel
+        unit: root.unit
+        onMessage: root.showToast(text)
         onClosed: keyboard.forceActiveFocus()
     }
 }

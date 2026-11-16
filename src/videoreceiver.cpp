@@ -65,6 +65,11 @@ void VideoReceiver::restart(int delayMs)
     m_restartTimer->start(delayMs);
 }
 
+void VideoReceiver::setSink(JpegSink *sink)
+{
+    m_worker->setSink(sink);
+}
+
 void VideoReceiver::setUrl(const QString &u)
 {
     if (u == m_url)

@@ -6,6 +6,7 @@
 //   W/S throttle   A/D yaw   arrows pitch/roll
 //   T takeoff  L land  Space emergency stop  F flip  C camera
 //   Enter controls on/off  H headless  G gyro calibrate  1/2/3 speed
+//   P photo  R start/stop recording
 import QtQuick 2.15
 import KyFly 1.0
 
@@ -67,6 +68,8 @@ Item {
         else if (k === Qt.Key_Return || k === Qt.Key_Enter) controls.trigger(FlightInput.ToggleArmed)
         else if (k === Qt.Key_H) controls.trigger(FlightInput.ToggleHeadless)
         else if (k === Qt.Key_G) controls.trigger(FlightInput.CalibrateGyro)
+        else if (k === Qt.Key_P) controls.trigger(FlightInput.TakePhoto)
+        else if (k === Qt.Key_R) controls.trigger(FlightInput.ToggleRecording)
         else if (k === Qt.Key_1) drone.speedLevel = 0
         else if (k === Qt.Key_2) drone.speedLevel = 1
         else if (k === Qt.Key_3) drone.speedLevel = 2

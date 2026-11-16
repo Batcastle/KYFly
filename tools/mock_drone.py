@@ -4,11 +4,14 @@
 * RTSP MJPEG stream at rtsp://<bind>:7070/webcam (RTP/JPEG, like the real drone)
 * UDP 7099: answers heartbeats with [model_id, camera_reset_mode, 1] and
   decodes/validates every control frame it receives.
+* Remote-controller buttons: `kill -USR1 <pid>` presses PHOTO and
+  `kill -USR2 <pid>` presses RECORD on the (simulated) transmitter, using the
+  reply format of the chosen model family.
 
 Needs: python3-gi, gir1.2-gst-rtsp-server-1.0, gstreamer1.0-plugins-good
 usage: mock_drone.py [--bind 127.0.0.1] [--model-id 9] [--size 640x360] [--fps 25]
 """
-import argparse, socket, threading, time
+import argparse, signal, socket, threading, time
 import gi
 gi.require_version("Gst", "1.0")
 gi.require_version("GstRtspServer", "1.0")
@@ -41,6 +44,25 @@ def decode_control(d):
         return "20-byte", ok, (r, pt, t, y), names
     return None, False, None, []
 
+GL_MODELS = {85, 103} | set(range(90, 102))
+rc_pending = []          # "photo" / "record" presses waiting for the next reply
+rc_counters = {"photo": 0, "record": 0}
+signal.signal(signal.SIGUSR1, lambda *_: rc_pending.append("photo"))
+signal.signal(signal.SIGUSR2, lambda *_: rc_pending.append("record"))
+
+def status_reply():
+    """Normal status, or a remote-button event if one is pending."""
+    if rc_pending:
+        what = rc_pending.pop(0)
+        log(f"RC transmitter: {what.upper()} pressed")
+        if args.model_id in GL_MODELS:
+            return bytes([0x66, 0x2A, 1 if what == "photo" else 2])        # 20-byte family
+        rc_counters[what] = (rc_counters[what] + 1) % 256                  # 8-byte family
+        c = rc_counters[what]
+        return bytes([args.model_id, args.camera_reset, 77, c, 0]) if what == "photo" \
+            else bytes([args.model_id, args.camera_reset, 88, 0, c])
+    return bytes([args.model_id, args.camera_reset, 1])
+
 def udp_loop():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind((args.bind, 7099))
@@ -49,7 +71,7 @@ def udp_loop():
     while True:
         d, addr = s.recvfrom(256)
         if d == b"\x01\x01":
-            s.sendto(bytes([args.model_id, args.camera_reset, 1]), addr)
+            s.sendto(status_reply(), addr)
         elif d[:1] == b"\x03":
             fmt, ok, sticks, flags = decode_control(d)
             if count == 0:
@@ -66,6 +88,8 @@ def udp_loop():
                 count = 0
         elif d == b"\x08\x01":
             log("controls OFF (08 01)"); last = None; count = 0
+        elif d in (b"\x09\x01", b"\x09\x02"):
+            log(f"app acknowledged RC {'photo' if d[1] == 1 else 'record'} (09 0{d[1]})")
         elif d[:1] == b"\x06":
             log(f"camera switch -> {d[1]}")
         else:

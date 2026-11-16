@@ -60,6 +60,8 @@ public:
         TrimRollLeft, TrimRollRight,
         TrimPitchBack, TrimPitchForward,
         TrimYawLeft, TrimYawRight,
+        TakePhoto,
+        ToggleRecording,
         ActionCount
     };
     Q_ENUM(Action)
